@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>PRIVADA GRANADAS: BONATERRA</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f2f2f2; padding: 30px; }
+    .container { max-width: 500px; margin: auto; background: #fff; border-radius: 8px; box-shadow: 0 0 10px #ccc; padding: 30px; }
+    h1 { text-align: center; color: #346b45; }
+    label { display: block; margin-top: 15px; }
+    input[type="text"], input[type="password"] { width: 100%; padding: 8px; margin-top: 5px; border-radius: 4px; border: 1px solid #ccc; }
+    button { margin-top: 20px; width: 100%; padding: 10px; background: #346b45; color: #fff; border: none; border-radius: 4px; font-size: 16px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+    th { background: #346b45; color: #fff; }
+    .error { color: red; margin-top: 10px; text-align: center; }
+    #logout-btn { background: #c0392b; }
+  </style>
+</head>
+<body>
+  <div class="container" id="login-container">
+    <h1>PRIVADA GRANADAS: BONATERRA</h1>
+    <form id="login-form">
+      <label for="casa">Número de Casa</label>
+      <input type="text" id="casa" name="casa" required>
+      <label for="password">Contraseña de acceso</label>
+      <input type="password" id="password" name="password" required>
+      <button type="submit">Ingresar</button>
+      <div class="error" id="error-msg"></div>
+    </form>
+  </div>
+  <div class="container" id="historial-container" style="display:none;">
+    <h1>Historial de Pagos Privada Granadas</h1>
+    <div id="datos-prop"></div>
+    <table id="tabla-historial">
+      <thead>
+        <tr>
+          <th>Mes</th>
+          <th>Monto</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Filas dinámicas -->
+      </tbody>
+    </table>
+    <button id="logout-btn" onclick="logout()">Cerrar Sesión</button>
+  </div>
+  <script>
+    // Cambia esta URL por la de tu endpoint en SheetDB
+    const SHEET_API_URL = 'https://sheetdb.io/api/v1/c8vr0haz82cbh'; // <-- CAMBIA ESTO
+
+    document.getElementById('login-form').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const casa = document.getElementById('casa').value.trim();
+      const password = document.getElementById('password').value.trim();
+      document.getElementById('error-msg').innerText = '';
+
+      try {
+        const response = await fetch(`${SHEET_API_URL}/search?No.%20Casa=${encodeURIComponent(casa)}`);
+        const data = await response.json();
+        if (data.length === 0) {
+          document.getElementById('error-msg').innerText = 'Número de casa no encontrado.';
+          return;
+        }
+        const registro = data.find(r => r.Contraseña === password);
+        if (!registro) {
+          document.getElementById('error-msg').innerText = 'Contraseña incorrecta.';
+          return;
+        }
+        mostrarHistorial(registro);
+      } catch (err) {
+        document.getElementById('error-msg').innerText = 'Error al conectar con la base de datos.';
+      }
+    });
+
+    function mostrarHistorial(registro) {
+      document.getElementById('login-container').style.display = 'none';
+      document.getElementById('historial-container').style.display = 'block';
+      document.getElementById('datos-prop').innerHTML = `<strong>Propietario:</strong> ${registro.Propietarios} <br> <strong>Número de Casa:</strong> ${registro["No. Casa"]}`;
+      const meses = ["Ene","Feb","Mar","Abr","Mayo","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+      const tbody = document.getElementById('tabla-historial').querySelector('tbody');
+      tbody.innerHTML = '';
+      meses.forEach(mes => {
+        const monto = registro[mes] || '';
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${mes}</td><td>${monto}</td>`;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function logout() {
+      document.getElementById('login-container').style.display = 'block';
+      document.getElementById('historial-container').style.display = 'none';
+      document.getElementById('login-form').reset();
+    }
+  </script>
+</body>
+</html>
